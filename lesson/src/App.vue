@@ -21,20 +21,31 @@
             </div>
             <!-- validation & hints (подсказки) -->
             <div
+              v-if="ticker && hintsList.length"
               class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap"
             >
               <span
+                v-for="(hint, idx) in hintsList"
+                v-bind:key="idx"
+                v-on:click="setHint(hint)"
                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
               >
-                BTC
+                {{ hint }}
               </span>
             </div>
-            <div class="text-sm text-red-600">Такой тикер уже добавлен</div>
+            <div v-if="IsInTickers" class="text-sm text-red-600">
+              Такой тикер уже добавлен
+            </div>
           </div>
         </div>
         <button
           @click="add"
+          v-bind:disabled="IsInTickers"
           type="button"
+          :class="{
+            'bg-red-200': IsInTickers,
+            'hover:bg-red-200': IsInTickers
+          }"
           class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
         >
           <!-- Heroicon name: solid/mail -->
@@ -178,7 +189,7 @@
 import {
   subscribeToTicker,
   unsubscribeFromTicker,
-  getSummaryTickets
+  getSummaryTickers
 } from "./api";
 
 export default {
@@ -194,14 +205,17 @@ export default {
 
       graph: [],
 
-      page: 1
+      page: 1,
+
+      summaryTickers: []
     };
   },
 
   // хук жизненного цикла компонета - перед монтированием компонента - делаем что-то
-  created() {
+  async created() {
     // получить список тикеров из БД
-    getSummaryTickets();
+    this.summaryTickers = await getSummaryTickers();
+    console.log("summary Tickers = ", this.summaryTickers);
     // подписка на обновление тикеров
     const windowData = Object.fromEntries(
       new URL(window.location).searchParams.entries()
@@ -278,10 +292,39 @@ export default {
       };
     },
 
-    hintsList(){
+    hintsList() {
+      let resultHints = [];
+      // все найденные подсказки
+      let hints = Object.values(this.summaryTickers).filter(val =>
+        val.includes(this.ticker.toUpperCase())
+      );
 
+      let mainHint = hints.filter(hint => hint === this.ticker.toUpperCase());
+
+      let otherHints = hints
+        .filter(hint => hint !== this.ticker.toUpperCase())
+        .sort();
+      console.log(mainHint, otherHints);
+      if (mainHint.length > 0) {
+        resultHints = [...mainHint, ...otherHints.slice(0, 3)];
+        console.log("result = ", resultHints);
+        return resultHints;
+      } else {
+        resultHints = [...otherHints.slice(0, 4)];
+        console.log("result = ", resultHints);
+        return resultHints;
+      }
+      // console.log(mainHint, otherHints)
+      // return mainHint
+    },
+    IsInTickers() {
+      const exist = this.tickers.filter(
+        val => val.name === this.ticker.toUpperCase()
+      );
+      return exist.length > 0 ? true : false;
     }
   },
+
   // методы - handlers, и вспомагательные функции
   methods: {
     updateTicker(tickerName, price) {
@@ -327,6 +370,9 @@ export default {
         this.selectedTicker = null;
       }
       unsubscribeFromTicker(tickerToRemove.name);
+    },
+    setHint(hint) {
+      this.ticker = hint;
     }
   },
   // наблюдатели (если изменилось поле объекта (компонента) - то делаем что-то)

@@ -1,5 +1,5 @@
-const API_KEY=
-'d13ace045ea70c31c4079e05c79a4ef71b3527b1a0f1cd5ea49b0d88d6b6ba4e'
+const API_KEY =
+  "d13ace045ea70c31c4079e05c79a4ef71b3527b1a0f1cd5ea49b0d88d6b6ba4e";
 // подписка на tickets
 const tickersHandlers = new Map(); // {}
 const socket = new WebSocket(
@@ -64,12 +64,23 @@ export const unsubscribeFromTicker = ticker => {
 
 // получить список существующих тикетов
 
-export function getSummaryTickets(){
-  fetch('https://min-api.cryptocompare.com/data/all/coinlist?summary=true')
-  .then(r=>r.json())
-  .then((rawData)=>{
-const summary = Object.keys(rawData.Data)
-console.log(summary)
-// console.log(Object.values(summary).map(val=>[val.Symbol,val.FullName]))
-  })
-}
+// export function  getSummaryTickers() {
+//   return fetch("https://min-api.cryptocompare.com/data/all/coinlist?summary=true")
+//   .then(r=>r.json())
+//   .then(rawData=>{
+//     const summary = Object.keys(rawData.Data);
+//     console.log(summary);
+//     return Object.keys(rawData.Data)
+//   })
+// }
+
+export const getSummaryTickers = async () => {
+  let summary = [];
+  const res = await fetch(
+    "https://min-api.cryptocompare.com/data/all/coinlist?summary=true"
+  );
+  const rawData = await res.json();
+  summary = Object.keys(rawData.Data);
+  // console.log("summary api = ", summary);
+  return summary;
+};
